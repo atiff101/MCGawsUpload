@@ -33,6 +33,13 @@
   color: #2563eb;
 }
 
+.dash-brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+
 .dash-brand-name {
   font-size: 15px;
   font-weight: 600;
