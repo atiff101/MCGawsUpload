@@ -122,7 +122,12 @@ function Sidebar({ view, onNavigate, onNew, email, onSignOut }) {
   return (
     <aside className="dash-sidebar">
       <div className="dash-brand">
-        <span className="dash-brand-logo">V</span>
+        <span className="dash-brand-logo">
+          <img
+            src="installation-module\src\assets\mcg_uk_logo.jpg"
+            alt="VUILA Connect logo"
+          />
+        </span>
         <span className="dash-brand-name">VUILA Connect</span>
       </div>
       <p className="dash-brand-sub">Producer workspace</p>
