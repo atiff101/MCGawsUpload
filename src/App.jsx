@@ -124,7 +124,7 @@ function Sidebar({ view, onNavigate, onNew, email, onSignOut }) {
       <div className="dash-brand">
         <span className="dash-brand-logo">
           <img
-            src="installation-module\src\assets\mcg_uk_logo.jpg"
+            src="/mcg_uk_logo.jpg"
             alt="VUILA Connect logo"
           />
         </span>
