@@ -10,9 +10,7 @@ import {
 } from "./cbamData";
 import CountrySelect from "./CountrySelect";
 import { activityLevelCheck } from "./activityLevelCheck";
-
-const API_URL =
-  "https://qq3a849d72.execute-api.eu-west-2.amazonaws.com/installations";
+import { createInstallation, uploadDocument } from "./api";
 
 function StepOrganisation({ data, updateField }) {
   return (
@@ -187,12 +185,32 @@ function StepInstallation({ data, updateField }) {
   );
 }
 
-function StepProduction({ data, updateField }) {
+function StepProduction({ data, updateField, onUpload }) {
   const activityWarning = activityLevelCheck(
     data.activityLevel,
     data.reportingPeriodStart,
     data.reportingPeriodEnd,
   );
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  async function onFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadError("");
+    setUploading(true);
+    try {
+      await onUpload(file);
+    } catch (err) {
+      console.error(err);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
   return (
     <div>
       <h2>Step 3: Production process</h2>
@@ -326,6 +344,29 @@ function StepProduction({ data, updateField }) {
           </p>
         )}
       </div>
+
+      <div className="field">
+        <label htmlFor="documents">
+          Supporting documents, e.g. energy bills
+        </label>
+        <br />
+        <input
+          id="documents"
+          type="file"
+          onChange={onFileChange}
+          disabled={uploading}
+          className="field-control"
+        />
+        {uploading && <p className="step-indicator">Uploading…</p>}
+        {uploadError && <p className="warning-text">{uploadError}</p>}
+        {data.documents?.length > 0 && (
+          <ul className="doc-list">
+            {data.documents.map((d) => (
+              <li key={d.key}>📎 {d.filename}</li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
@@ -356,10 +397,20 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
     reportingPeriodEnd: "",
     activityLevel: "",
     consumesPrecursors: "",
+
+    documents: [],
   });
 
   function updateField(field, value) {
     setData((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleUpload(file) {
+    const doc = await uploadDocument(file, auth.user?.id_token);
+    setData((prev) => ({
+      ...prev,
+      documents: [...(prev.documents || []), doc],
+    }));
   }
 
   function step1Valid() {
@@ -404,16 +455,7 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.user?.id_token}`,
-        },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      await res.json();
+      await createInstallation(data, auth.user?.id_token);
       onSubmitted();
     } catch (err) {
       console.error(err);
@@ -435,7 +477,13 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
 
       {step === 1 && <StepInstallation data={data} updateField={updateField} />}
 
-      {step === 2 && <StepProduction data={data} updateField={updateField} />}
+      {step === 2 && (
+        <StepProduction
+          data={data}
+          updateField={updateField}
+          onUpload={handleUpload}
+        />
+      )}
 
       <div className="nav-buttons">
         <button
