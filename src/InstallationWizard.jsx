@@ -10,7 +10,7 @@ import {
 } from "./cbamData";
 import CountrySelect from "./CountrySelect";
 import { activityLevelCheck } from "./activityLevelCheck";
-import { createInstallation, uploadDocument } from "./api";
+import { createInstallation, uploadDocument } from "./Api";
 
 function StepOrganisation({ data, updateField }) {
   return (
