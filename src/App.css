@@ -356,3 +356,21 @@ button:focus-visible,
     padding: 11px 14px;
   }
 }
+
+.doc-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.doc-list li {
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 7px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
