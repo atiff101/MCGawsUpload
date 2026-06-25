@@ -1,6 +1,10 @@
 import { COUNTRIES, format } from "./cbamData";
 
-export default function Dashboard({ submissions, onNewInstallation }) {
+export default function Dashboard({
+  submissions,
+  onNewInstallation,
+  onDelete,
+}) {
   if (!submissions || submissions.length === 0) {
     return <EmptyState onCreate={onNewInstallation} />;
   }
@@ -52,13 +56,21 @@ export default function Dashboard({ submissions, onNewInstallation }) {
       <section className="dash-card">
         <div className="dash-card-head">
           <span className="dash-card-title">My installations</span>
-          <button className="dash-btn-secondary" onClick={onNewInstallation}>
+          <button
+            type="button"
+            className="dash-btn-secondary"
+            onClick={onNewInstallation}
+          >
             + New
           </button>
         </div>
         <div className="dash-list">
           {submissions.map((s, i) => (
-            <InstallationRow key={s.id || i} s={s} />
+            <InstallationRow
+              key={s.installationId || i}
+              s={s}
+              onDelete={onDelete}
+            />
           ))}
         </div>
       </section>
@@ -72,7 +84,7 @@ export default function Dashboard({ submissions, onNewInstallation }) {
             .slice(-3)
             .reverse()
             .map((s, i) => (
-              <div className="dash-activity-row" key={i}>
+              <div className="dash-activity-row" key={s.installationId || i}>
                 <span className="dash-activity-icon">✓</span>
                 <span>
                   {s.installationName || s.legalName || "Installation"} profile
@@ -95,7 +107,7 @@ function StatCard({ label, value, muted }) {
   );
 }
 
-function InstallationRow({ s }) {
+function InstallationRow({ s, onDelete }) {
   const country =
     COUNTRIES.find((c) => c.code === s.country)?.name || s.country || "";
   const meta = [s.cnCode ? `CN ${s.cnCode}` : null, country, s.city]
@@ -104,6 +116,7 @@ function InstallationRow({ s }) {
   const tonnes = Number(s.activityLevel)
     ? `${Number(s.activityLevel).toLocaleString()} t`
     : null;
+  const docCount = s.documents?.length || 0;
 
   return (
     <div className="dash-row">
@@ -115,9 +128,21 @@ function InstallationRow({ s }) {
         <div className="dash-row-meta">
           {meta}
           {tonnes ? ` · ${tonnes}` : ""}
+          {docCount > 0 ? ` · ${docCount} doc${docCount > 1 ? "s" : ""}` : ""}
         </div>
       </div>
-      <span className="dash-badge dash-badge-submitted">Submitted</span>
+      <div className="dash-row-actions">
+        <span className="dash-badge dash-badge-submitted">Submitted</span>
+        {onDelete && (
+          <button
+            type="button"
+            className="dash-row-delete"
+            onClick={() => onDelete(s.installationId)}
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -136,7 +161,11 @@ function EmptyState({ onCreate }) {
           <li>✓ Plant location and identifiers</li>
           <li>✓ Production route, CN code and activity data</li>
         </ul>
-        <button className="dash-btn-primary dash-empty-btn" onClick={onCreate}>
+        <button
+          type="button"
+          className="dash-btn-primary dash-empty-btn"
+          onClick={onCreate}
+        >
           Create installation profile
         </button>
         <p className="dash-empty-time">Takes about 5–10 minutes</p>
