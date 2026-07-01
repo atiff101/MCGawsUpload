@@ -4,7 +4,7 @@ import "./Dashboard.css";
 import { useAuth } from "react-oidc-context";
 import Dashboard from "./Dashboard";
 import InstallationWizard from "./InstallationWizard";
-import { listInstallations, deleteInstallation } from "./api";
+import { listInstallations, deleteInstallation } from "./Api";
 
 const NAV_ITEMS = [
   { id: "home", label: "Dashboard", enabled: true },
