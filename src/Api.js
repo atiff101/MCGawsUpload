@@ -1,4 +1,4 @@
-const API_BASE = "https://qq3a849d72.execute-api.eu-west-2.amazonaws.com";
+const API_BASE = "https://ni6rkidbi0.execute-api.eu-west-2.amazonaws.com";
 
 function authHeaders(idToken) {
   return { Authorization: `Bearer ${idToken}` };
