@@ -5,14 +5,11 @@ import "./index.css";
 import App from "./App.jsx";
 
 const cognitoAuthConfig = {
-  authority: "https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_VCB7Bfxtg",
-  client_id: "si5elr7j05ieqh9svljdcvjul",
-  redirect_uri: window.location.origin,
+  authority: "https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_Ypcn3EjAh",
+  client_id: "1rlolqp8d21rlki8q9f32jois0",
+  redirect_uri: "http://localhost:5173",
   response_type: "code",
-  scope: "email openid profile",
-  onSigninCallback: () => {
-    window.history.replaceState({}, document.title, window.location.pathname);
-  },
+  scope: "email openid phone",
 };
 
 createRoot(document.getElementById("root")).render(
