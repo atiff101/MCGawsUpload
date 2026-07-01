@@ -4,7 +4,7 @@ import "./Dashboard.css";
 import { useAuth } from "react-oidc-context";
 import Dashboard from "./Dashboard";
 import InstallationWizard from "./InstallationWizard";
-import { listInstallations, deleteInstallation } from "./Api";
+import { listInstallations, deleteInstallation } from "./api";
 
 const NAV_ITEMS = [
   { id: "home", label: "Dashboard", enabled: true },
@@ -53,10 +53,10 @@ export default function App() {
 
   function signOut() {
     auth.removeUser();
-    const clientId = "si5elr7j05ieqh9svljdcvjul";
+    const clientId = "1rlolqp8d21rlki8q9f32jois0";
     const logoutUri = window.location.origin;
     const domain =
-      "https://eu-west-2vcb7bfxtg.auth.eu-west-2.amazoncognito.com";
+      "https://eu-west-2ypcn3ejah.auth.eu-west-2.amazoncognito.com";
     window.location.href = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(
       logoutUri,
     )}`;
