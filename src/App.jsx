@@ -79,17 +79,10 @@ export default function App() {
   }
 
   if (!auth.isAuthenticated) {
+    auth.signinRedirect();
     return (
       <div className="form-wrapper">
-        <h1>Sign in</h1>
-        <p>Please sign in to access your VUILA Connect workspace.</p>
-        <button
-          type="button"
-          className="nav-btn"
-          onClick={() => auth.signinRedirect()}
-        >
-          Sign in
-        </button>
+        <p>Redirecting to sign in…</p>
       </div>
     );
   }
