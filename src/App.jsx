@@ -38,6 +38,23 @@ export default function App() {
     loadSubmissions();
   }, [loadSubmissions]);
 
+  useEffect(() => {
+    if (
+      sessionStorage.getItem("loggingOut") &&
+      !auth.isAuthenticated &&
+      !auth.isLoading
+    ) {
+      sessionStorage.removeItem("loggingOut");
+      const clientId = "1rlolqp8d21rlki8q9f32jois0";
+      const domain =
+        "https://eu-west-2ypcn3ejah.auth.eu-west-2.amazoncognito.com";
+      const logoutUri = window.location.origin;
+      window.location.assign(
+        `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`,
+      );
+    }
+  }, [auth.isAuthenticated, auth.isLoading]);
+
   async function handleDelete(id) {
     if (!id) return;
     if (!window.confirm("Delete this installation? This can't be undone.")) {
@@ -68,13 +85,6 @@ export default function App() {
   function signOut() {
     sessionStorage.setItem("loggingOut", "true");
     auth.removeUser();
-    const clientId = "1rlolqp8d21rlki8q9f32jois0";
-    const logoutUri = window.location.origin;
-    const domain =
-      "https://eu-west-2ypcn3ejah.auth.eu-west-2.amazoncognito.com";
-    window.location.href = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(
-      logoutUri,
-    )}`;
   }
 
   if (auth.isLoading) {
@@ -94,29 +104,12 @@ export default function App() {
   }
 
   if (!auth.isAuthenticated) {
-    if (!sessionStorage.getItem("loggingOut")) {
+    if (!auth.activeNavigator && !sessionStorage.getItem("loggingOut")) {
       auth.signinRedirect();
-      return (
-        <div className="form-wrapper">
-          <p>Redirecting to sign in…</p>
-        </div>
-      );
     }
-
     return (
       <div className="form-wrapper">
-        <h1>Signed out</h1>
-        <p>You've been signed out.</p>
-        <button
-          type="button"
-          className="nav-btn"
-          onClick={() => {
-            sessionStorage.removeItem("loggingOut");
-            auth.signinRedirect();
-          }}
-        >
-          Sign in again
-        </button>
+        <p>Signing out…</p>
       </div>
     );
   }
