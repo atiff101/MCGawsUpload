@@ -21,6 +21,7 @@ export default function App() {
   //console.log("ID TOKEN:", auth.user?.id_token);
   // for testing
   const [submissions, setSubmissions] = useState(null);
+  const [editing, setEditing] = useState(null);
 
   const loadSubmissions = useCallback(async () => {
     if (!auth.isAuthenticated) return;
@@ -49,6 +50,19 @@ export default function App() {
       console.error(err);
       alert("Couldn't delete the installation. Please try again.");
     }
+  }
+
+  function startNew() {
+    setEditing(null);
+    setView("wizard");
+  }
+  function startEdit(record) {
+    setEditing(record);
+    setView("wizard");
+  }
+  function goHome() {
+    setEditing(null);
+    setView("home");
   }
 
   function signOut() {
@@ -109,15 +123,18 @@ export default function App() {
           {view === "home" ? (
             <Dashboard
               submissions={submissions}
-              onNewInstallation={() => setView("wizard")}
+              onNewInstallation={startNew}
+              onEdit={startEdit}
               onDelete={handleDelete}
             />
           ) : (
             <InstallationWizard
-              onCancel={() => setView("home")}
+              key={editing?.installationId || "new"}
+              existing={editing}
+              onCancel={goHome}
               onSubmitted={async () => {
                 await loadSubmissions();
-                setView("home");
+                goHome();
               }}
             />
           )}
