@@ -93,10 +93,29 @@ export default function App() {
   }
 
   if (!auth.isAuthenticated) {
-    auth.signinRedirect();
+    if (!sessionStorage.getItem("loggingOut")) {
+      auth.signinRedirect();
+      return (
+        <div className="form-wrapper">
+          <p>Redirecting to sign in…</p>
+        </div>
+      );
+    }
+
     return (
       <div className="form-wrapper">
-        <p>Redirecting to sign in…</p>
+        <h1>Signed out</h1>
+        <p>You've been signed out.</p>
+        <button
+          type="button"
+          className="nav-btn"
+          onClick={() => {
+            sessionStorage.removeItem("loggingOut");
+            auth.signinRedirect();
+          }}
+        >
+          Sign in again
+        </button>
       </div>
     );
   }
