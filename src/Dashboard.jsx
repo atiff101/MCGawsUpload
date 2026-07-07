@@ -3,6 +3,7 @@ import { COUNTRIES, format } from "./cbamData";
 export default function Dashboard({
   submissions,
   onNewInstallation,
+  onEdit,
   onDelete,
 }) {
   if (!submissions || submissions.length === 0) {
@@ -69,6 +70,7 @@ export default function Dashboard({
             <InstallationRow
               key={s.installationId || i}
               s={s}
+              onEdit={onEdit}
               onDelete={onDelete}
             />
           ))}
@@ -107,7 +109,7 @@ function StatCard({ label, value, muted }) {
   );
 }
 
-function InstallationRow({ s, onDelete }) {
+function InstallationRow({ s, onEdit, onDelete }) {
   const country =
     COUNTRIES.find((c) => c.code === s.country)?.name || s.country || "";
   const meta = [s.cnCode ? `CN ${s.cnCode}` : null, country, s.city]
@@ -117,6 +119,7 @@ function InstallationRow({ s, onDelete }) {
     ? `${Number(s.activityLevel).toLocaleString()} t`
     : null;
   const docCount = s.documents?.length || 0;
+  const flagged = s.checksStatus === "flagged";
 
   return (
     <div className="dash-row">
@@ -133,6 +136,24 @@ function InstallationRow({ s, onDelete }) {
       </div>
       <div className="dash-row-actions">
         <span className="dash-badge dash-badge-submitted">Submitted</span>
+        {flagged && (
+          <span
+            className="dash-badge dash-badge-review"
+            title={(s.checksIssues || []).join("\n")}
+          >
+            Needs review
+          </span>
+        )}
+        {onEdit && (
+          <button
+            type="button"
+            className="dash-row-edit"
+            onClick={() => onEdit(s)}
+          >
+            Edit
+          </button>
+        )}
+
         {onDelete && (
           <button
             type="button"
