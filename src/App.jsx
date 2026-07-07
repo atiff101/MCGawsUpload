@@ -66,6 +66,7 @@ export default function App() {
   }
 
   function signOut() {
+    sessionStorage.setItem("loggingOut", "true");
     auth.removeUser();
     const clientId = "1rlolqp8d21rlki8q9f32jois0";
     const logoutUri = window.location.origin;
