@@ -70,7 +70,7 @@ export default function App() {
     const clientId = "1rlolqp8d21rlki8q9f32jois0";
     const logoutUri = window.location.origin;
     const domain =
-      "https://main.d1lre5dzqbofza.amplifyapp.com";
+      "https://eu-west-2ypcn3ejah.auth.eu-west-2.amazoncognito.com";
     window.location.href = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(
       logoutUri,
     )}`;
