@@ -1,4 +1,4 @@
-const MAX_TONNES_PER_DAY = 5000;
+const MAX_TONNES_PER_DAY = 50000;
 
 export function activityLevelCheck(tonnes, periodStart, periodEnd) {
   const value = Number(tonnes);
