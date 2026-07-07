@@ -10,7 +10,58 @@ import {
 } from "./cbamData";
 import CountrySelect from "./CountrySelect";
 import { activityLevelCheck } from "./activityLevelCheck";
-import { createInstallation, uploadDocument } from "./Api";
+import {
+  createInstallation,
+  updateInstallation,
+  uploadDocument,
+  getDownloadUrl,
+} from "./Api";
+
+const BLANK = {
+  legalName: "",
+  country: "",
+  taxId: "",
+  contactName: "",
+  contactEmail: "",
+
+  installationName: "",
+  streetAddress: "",
+  city: "",
+  postalCode: "",
+  unLocode: "",
+  commissioningYear: "",
+  cbamRegistryId: "",
+
+  category: "",
+  route: "",
+  cnCode: "",
+  reportingPeriodStart: "",
+  reportingPeriodEnd: "",
+  activityLevel: "",
+  consumesPrecursors: "",
+
+  documents: [],
+};
+
+// Starting state: BLANK for a new one, or the saved record overlaid on BLANK
+// for an edit. Values come back typed (number/boolean) so convert them to the
+// strings the form fields expect.
+function initialData(existing) {
+  if (!existing) return { ...BLANK };
+  const merged = { ...BLANK };
+  for (const k of Object.keys(BLANK)) {
+    const v = existing[k];
+    if (v === undefined || v === null) continue;
+    if (k === "documents") {
+      merged[k] = Array.isArray(v) ? v : [];
+    } else if (k === "consumesPrecursors") {
+      merged[k] = v === true ? "yes" : v === false ? "no" : String(v);
+    } else {
+      merged[k] = String(v);
+    }
+  }
+  return merged;
+}
 
 function StepOrganisation({ data, updateField }) {
   return (
@@ -185,7 +236,7 @@ function StepInstallation({ data, updateField }) {
   );
 }
 
-function StepProduction({ data, updateField, onUpload }) {
+function StepProduction({ data, updateField, onUpload, onRemove, onView }) {
   const activityWarning = activityLevelCheck(
     data.activityLevel,
     data.reportingPeriodStart,
@@ -340,14 +391,16 @@ function StepProduction({ data, updateField, onUpload }) {
         </select>
         {data.consumesPrecursors === "yes" && (
           <p className="warning-text">
-            ⚠️ Complex goods reporting not supported yet. Please contact MCG.
+            ⚠️ This installation consumes CBAM goods as inputs (precursors). You
+            can still submit, we'll flag the record and follow up for the extra
+            precursor data needed for a complete declaration.
           </p>
         )}
       </div>
 
       <div className="field">
         <label htmlFor="documents">
-          Supporting documents, e.g. energy bills
+          Supporting documents (optional) — e.g. energy bills
         </label>
         <br />
         <input
@@ -362,7 +415,25 @@ function StepProduction({ data, updateField, onUpload }) {
         {data.documents?.length > 0 && (
           <ul className="doc-list">
             {data.documents.map((d) => (
-              <li key={d.key}>📎 {d.filename}</li>
+              <li key={d.key} className="doc-list-item">
+                <span className="doc-name">📎 {d.filename}</span>
+                <span className="doc-actions">
+                  <button
+                    type="button"
+                    className="doc-link"
+                    onClick={() => onView(d.key)}
+                  >
+                    View
+                  </button>
+                  <button
+                    type="button"
+                    className="doc-link doc-remove"
+                    onClick={() => onRemove(d.key)}
+                  >
+                    Remove
+                  </button>
+                </span>
+              </li>
             ))}
           </ul>
         )}
@@ -371,35 +442,16 @@ function StepProduction({ data, updateField, onUpload }) {
   );
 }
 
-export default function InstallationWizard({ onCancel, onSubmitted }) {
+export default function InstallationWizard({
+  existing,
+  onCancel,
+  onSubmitted,
+}) {
   const auth = useAuth();
+  const isEdit = Boolean(existing);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [data, setData] = useState({
-    legalName: "",
-    country: "",
-    taxId: "",
-    contactName: "",
-    contactEmail: "",
-
-    installationName: "",
-    streetAddress: "",
-    city: "",
-    postalCode: "",
-    unLocode: "",
-    commissioningYear: "",
-    cbamRegistryId: "",
-
-    category: "",
-    route: "",
-    cnCode: "",
-    reportingPeriodStart: "",
-    reportingPeriodEnd: "",
-    activityLevel: "",
-    consumesPrecursors: "",
-
-    documents: [],
-  });
+  const [data, setData] = useState(() => initialData(existing));
 
   function updateField(field, value) {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -411,6 +463,25 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
       ...prev,
       documents: [...(prev.documents || []), doc],
     }));
+  }
+
+  function removeDocument(key) {
+    setData((prev) => ({
+      ...prev,
+      documents: (prev.documents || []).filter((d) => d.key !== key),
+    }));
+  }
+
+  async function viewDocument(key) {
+    const win = window.open("about:blank", "_blank");
+    try {
+      const url = await getDownloadUrl(key, auth.user?.id_token);
+      if (win) win.location.href = url;
+    } catch (err) {
+      console.error(err);
+      if (win) win.close();
+      alert("Couldn't open that document. Please try again.");
+    }
   }
 
   function step1Valid() {
@@ -443,7 +514,7 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
     if (data.activityLevel === "") return false;
     if (Number(data.activityLevel) <= 0) return false;
     if (data.consumesPrecursors === "") return false;
-    if (data.consumesPrecursors === "yes") return false;
+    // "yes" is allowed through — the record is flagged server-side for follow-up.
     return true;
   }
 
@@ -455,11 +526,19 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      await createInstallation(data, auth.user?.id_token);
+      if (isEdit) {
+        await updateInstallation(
+          existing.installationId,
+          data,
+          auth.user?.id_token,
+        );
+      } else {
+        await createInstallation(data, auth.user?.id_token);
+      }
       onSubmitted();
     } catch (err) {
       console.error(err);
-      alert("Something went wrong submitting the form.");
+      alert("Something went wrong saving the form.");
       setSubmitting(false);
     }
   }
@@ -470,7 +549,7 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
         ← Back to dashboard
       </button>
 
-      <h1>Register an installation</h1>
+      <h1>{isEdit ? "Edit installation" : "Register an installation"}</h1>
       <p className="step-indicator">Step {step + 1} of 3</p>
 
       {step === 0 && <StepOrganisation data={data} updateField={updateField} />}
@@ -482,6 +561,8 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
           data={data}
           updateField={updateField}
           onUpload={handleUpload}
+          onRemove={removeDocument}
+          onView={viewDocument}
         />
       )}
 
@@ -513,7 +594,13 @@ export default function InstallationWizard({ onCancel, onSubmitted }) {
             disabled={!isValid || submitting}
             className="nav-btn"
           >
-            {submitting ? "Submitting…" : "Submit"}
+            {submitting
+              ? isEdit
+                ? "Saving…"
+                : "Submitting…"
+              : isEdit
+                ? "Save changes"
+                : "Submit"}
           </button>
         )}
       </div>
