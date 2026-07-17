@@ -2,6 +2,8 @@ import { COUNTRIES, format } from "./cbamData";
 
 export default function Dashboard({
   submissions,
+  shares = [],
+  pendingRequests = 0,
   onNewInstallation,
   onEdit,
   onDelete,
@@ -37,21 +39,36 @@ export default function Dashboard({
           label="Total activity"
           value={`${totalTonnes.toLocaleString()} t`}
         />
-        <StatCard label="Pending data requests" value={0} muted />
+        <StatCard
+          label="Pending data requests"
+          value={pendingRequests}
+          muted={pendingRequests === 0}
+        />
       </div>
 
       <section className="dash-card">
         <div className="dash-card-head">
           <span className="dash-card-title">Data requests</span>
         </div>
-        <div className="dash-empty-inline">
-          <p className="dash-empty-title">No data requests yet</p>
-          <p className="dash-empty-text">
-            When EU importers request your CBAM data, they'll appear here for
-            you to review and approve. (Part of the upcoming Data Sharing
-            module.)
-          </p>
-        </div>
+        {pendingRequests > 0 ? (
+          <div className="dash-empty-inline">
+            <p className="dash-empty-title">
+              {pendingRequests} request{pendingRequests > 1 ? "s" : ""} awaiting
+              your review
+            </p>
+            <p className="dash-empty-text">
+              Head to the Data sharing page to review, approve or decline them.
+            </p>
+          </div>
+        ) : (
+          <div className="dash-empty-inline">
+            <p className="dash-empty-title">No data requests yet</p>
+            <p className="dash-empty-text">
+              When EU importers request your CBAM data, they'll appear on the
+              Data sharing page for you to review and approve.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="dash-card">
@@ -70,6 +87,7 @@ export default function Dashboard({
             <InstallationRow
               key={s.installationId || i}
               s={s}
+              shares={shares}
               onEdit={onEdit}
               onDelete={onDelete}
             />
@@ -109,7 +127,7 @@ function StatCard({ label, value, muted }) {
   );
 }
 
-function InstallationRow({ s, onEdit, onDelete }) {
+function InstallationRow({ s, shares = [], onEdit, onDelete }) {
   const country =
     COUNTRIES.find((c) => c.code === s.country)?.name || s.country || "";
   const meta = [s.cnCode ? `CN ${s.cnCode}` : null, country, s.city]
@@ -120,6 +138,9 @@ function InstallationRow({ s, onEdit, onDelete }) {
     : null;
   const docCount = s.documents?.length || 0;
   const flagged = s.checksStatus === "flagged";
+  const shareCount = shares.filter(
+    (sh) => sh.installationId === s.installationId,
+  ).length;
 
   return (
     <div className="dash-row">
@@ -136,6 +157,11 @@ function InstallationRow({ s, onEdit, onDelete }) {
       </div>
       <div className="dash-row-actions">
         <span className="dash-badge dash-badge-submitted">Submitted</span>
+        {shareCount > 0 && (
+          <span className="dash-badge dash-badge-shared">
+            Shared with {shareCount} importer{shareCount > 1 ? "s" : ""}
+          </span>
+        )}
         {flagged && (
           <span
             className="dash-badge dash-badge-review"
