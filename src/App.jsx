@@ -4,12 +4,19 @@ import "./Dashboard.css";
 import { useAuth } from "react-oidc-context";
 import Dashboard from "./Dashboard";
 import InstallationWizard from "./InstallationWizard";
-import { listInstallations, deleteInstallation } from "./Api";
+import DataSharing, { isExpired } from "./DataSharing";
+import SupplierCatalogue from "./SupplierCatalogue";
+import {
+  listInstallations,
+  deleteInstallation,
+  listIncomingRequests,
+  listOutgoingRequests,
+} from "./Api";
 
 const NAV_ITEMS = [
   { id: "home", label: "Dashboard", enabled: true },
-  { id: "requests", label: "Data requests", enabled: false },
-  { id: "sharing", label: "Sharing", enabled: false },
+  { id: "catalogue", label: "Supplier catalogue", enabled: true },
+  { id: "sharing", label: "Data sharing", enabled: true },
   { id: "documents", label: "Documents", enabled: false },
   { id: "company", label: "Company", enabled: false },
   { id: "settings", label: "Settings", enabled: false },
@@ -23,6 +30,13 @@ export default function App() {
   const [submissions, setSubmissions] = useState(null);
   const [editing, setEditing] = useState(null);
 
+  // Data sharing: requests where I'm the producer (incoming) and where I'm
+  // the requester (outgoing). Both come from the API — no seeded data.
+  const [incoming, setIncoming] = useState([]);
+  const [outgoing, setOutgoing] = useState([]);
+  const [sharingLoading, setSharingLoading] = useState(true);
+  const [sharingError, setSharingError] = useState(false);
+
   const loadSubmissions = useCallback(async () => {
     if (!auth.isAuthenticated) return;
     try {
@@ -34,9 +48,31 @@ export default function App() {
     }
   }, [auth.isAuthenticated, auth.user?.id_token]);
 
+  const loadSharing = useCallback(async () => {
+    if (!auth.isAuthenticated) return;
+    setSharingError(false);
+    try {
+      const [inc, out] = await Promise.all([
+        listIncomingRequests(auth.user?.id_token),
+        listOutgoingRequests(auth.user?.id_token),
+      ]);
+      setIncoming(inc);
+      setOutgoing(out);
+    } catch (err) {
+      console.error(err);
+      setSharingError(true);
+    } finally {
+      setSharingLoading(false);
+    }
+  }, [auth.isAuthenticated, auth.user?.id_token]);
+
   useEffect(() => {
     loadSubmissions();
   }, [loadSubmissions]);
+
+  useEffect(() => {
+    loadSharing();
+  }, [loadSharing]);
 
   useEffect(() => {
     if (
@@ -122,6 +158,13 @@ export default function App() {
     );
   }
 
+  // Derived from the same source of truth the Data sharing page uses, so the
+  // dashboard badge and stat can never drift out of sync with it.
+  const pendingCount = incoming.filter((r) => r.status === "pending").length;
+  const activeShares = incoming.filter(
+    (r) => r.status === "approved" && !isExpired(r),
+  );
+
   return (
     <div className="dash-shell">
       <Sidebar
@@ -136,9 +179,25 @@ export default function App() {
           {view === "home" ? (
             <Dashboard
               submissions={submissions}
+              shares={activeShares}
+              pendingRequests={pendingCount}
               onNewInstallation={startNew}
               onEdit={startEdit}
               onDelete={handleDelete}
+            />
+          ) : view === "sharing" ? (
+            <DataSharing
+              incoming={incoming}
+              outgoing={outgoing}
+              loading={sharingLoading}
+              loadError={sharingError}
+              onReload={loadSharing}
+            />
+          ) : view === "catalogue" ? (
+            <SupplierCatalogue
+              submissions={submissions}
+              outgoing={outgoing}
+              onRequestSent={loadSharing}
             />
           ) : (
             <InstallationWizard
