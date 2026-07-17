@@ -40,6 +40,12 @@ const BLANK = {
   activityLevel: "",
   consumesPrecursors: "",
 
+  usingDefaultValues: "",
+  directEmissions: "",
+  indirectEmissions: "",
+
+  listedInCatalogue: false,
+
   documents: [],
 };
 
@@ -54,8 +60,10 @@ function initialData(existing) {
     if (v === undefined || v === null) continue;
     if (k === "documents") {
       merged[k] = Array.isArray(v) ? v : [];
-    } else if (k === "consumesPrecursors") {
+    } else if (k === "consumesPrecursors" || k === "usingDefaultValues") {
       merged[k] = v === true ? "yes" : v === false ? "no" : String(v);
+    } else if (k === "listedInCatalogue") {
+      merged[k] = v === true || v === "true";
     } else {
       merged[k] = String(v);
     }
@@ -375,6 +383,67 @@ function StepProduction({ data, updateField, onUpload, onRemove, onView }) {
       </div>
 
       <div className="field">
+        <label htmlFor="usingDefaultValues">Emissions data source *</label>
+        <br />
+        <select
+          id="usingDefaultValues"
+          value={data.usingDefaultValues}
+          onChange={(e) => updateField("usingDefaultValues", e.target.value)}
+          className="field-control"
+        >
+          <option value="">Select...</option>
+          <option value="yes">Use EU default values</option>
+          <option value="no">Enter our own measured values</option>
+        </select>
+        {data.usingDefaultValues === "yes" && (
+          <p className="warning-text">
+            Using EU default values. Importers will see cost based on defaults —
+            usually higher than verified actuals. Switch to measured values to
+            show your real figures.
+          </p>
+        )}
+      </div>
+
+      {data.usingDefaultValues === "no" && (
+        <>
+          <div className="field">
+            <label htmlFor="directEmissions">
+              Direct specific embedded emissions (tCO₂e per tonne) *
+            </label>
+            <br />
+            <input
+              id="directEmissions"
+              type="number"
+              value={data.directEmissions}
+              onChange={(e) => updateField("directEmissions", e.target.value)}
+              placeholder="e.g. 1.8"
+              className="field-control"
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="indirectEmissions">
+              Indirect specific embedded emissions (tCO₂e per tonne) *
+            </label>
+            <br />
+            <input
+              id="indirectEmissions"
+              type="number"
+              value={data.indirectEmissions}
+              onChange={(e) => updateField("indirectEmissions", e.target.value)}
+              placeholder="e.g. 0.4"
+              className="field-control"
+            />
+            <p className="field-hint">
+              Direct = emissions from your own process. Indirect = from
+              electricity used. Both in tonnes CO₂e per tonne of product, over
+              the reporting period above.
+            </p>
+          </div>
+        </>
+      )}
+
+      <div className="field">
         <label htmlFor="consumesPrecursors">
           Does this process consume CBAM goods as inputs? *
         </label>
@@ -437,6 +506,27 @@ function StepProduction({ data, updateField, onUpload, onRemove, onView }) {
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="consent-field">
+        <label htmlFor="listedInCatalogue" className="consent-label">
+          <input
+            id="listedInCatalogue"
+            type="checkbox"
+            checked={data.listedInCatalogue}
+            onChange={(e) => updateField("listedInCatalogue", e.target.checked)}
+          />
+          <span>
+            List this installation in the supplier catalogue so EU importers can
+            discover it.
+          </span>
+        </label>
+        <p className="field-hint">
+          Listing shows your company, product, country and CN code (plus
+          headline emissions, if provided). Importers still request your
+          detailed data, which you approve per importer — nothing is released
+          automatically. You can change this at any time.
+        </p>
       </div>
     </div>
   );
@@ -513,6 +603,13 @@ export default function InstallationWizard({
       return false;
     if (data.activityLevel === "") return false;
     if (Number(data.activityLevel) <= 0) return false;
+    if (data.usingDefaultValues === "") return false;
+    if (data.usingDefaultValues === "no") {
+      if (data.directEmissions === "" || Number(data.directEmissions) < 0)
+        return false;
+      if (data.indirectEmissions === "" || Number(data.indirectEmissions) < 0)
+        return false;
+    }
     if (data.consumesPrecursors === "") return false;
     // "yes" is allowed through — the record is flagged server-side for follow-up.
     return true;
