@@ -65,3 +65,56 @@ export async function getDownloadUrl(key, idToken) {
   const { downloadUrl } = await asJson(res);
   return downloadUrl;
 }
+
+// --- Supplier catalogue ------------------------------------------------
+
+export async function listCatalogue(idToken) {
+  const res = await fetch(`${API_BASE}/catalogue`, {
+    headers: authHeaders(idToken),
+  });
+  const data = await asJson(res);
+  return Array.isArray(data) ? data : [];
+}
+
+// --- Data sharing ------------------------------------------------------
+
+export async function listIncomingRequests(idToken) {
+  const res = await fetch(`${API_BASE}/requests`, {
+    headers: authHeaders(idToken),
+  });
+  const data = await asJson(res);
+  return Array.isArray(data) ? data : [];
+}
+
+export async function listOutgoingRequests(idToken) {
+  const res = await fetch(`${API_BASE}/requests/outgoing`, {
+    headers: authHeaders(idToken),
+  });
+  const data = await asJson(res);
+  return Array.isArray(data) ? data : [];
+}
+
+export async function createDataRequest(payload, idToken) {
+  const res = await fetch(`${API_BASE}/requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(idToken) },
+    body: JSON.stringify(payload),
+  });
+  return asJson(res);
+}
+
+export async function decideRequest(requestId, payload, idToken) {
+  const res = await fetch(`${API_BASE}/requests/${requestId}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(idToken) },
+    body: JSON.stringify(payload),
+  });
+  return asJson(res);
+}
+
+export async function getSharedData(installationId, idToken) {
+  const res = await fetch(`${API_BASE}/shared-data/${installationId}`, {
+    headers: authHeaders(idToken),
+  });
+  return asJson(res);
+}
