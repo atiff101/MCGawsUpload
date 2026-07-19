@@ -1,5 +1,7 @@
 import { COUNTRIES, format } from "./cbamData";
 
+const EXPIRING_SOON_DAYS = 30;
+
 export default function Dashboard({
   submissions,
   shares = [],
@@ -13,12 +15,19 @@ export default function Dashboard({
   }
 
   const profileCount = submissions.length;
-  const goodsCount = new Set(submissions.map((s) => s.cnCode).filter(Boolean))
-    .size;
+  const flaggedCount = submissions.filter(
+    (s) => s.checksStatus === "flagged",
+  ).length;
   const totalTonnes = submissions.reduce(
     (sum, s) => sum + (Number(s.activityLevel) || 0),
     0,
   );
+  const expiringSoon = shares.filter((s) => {
+    if (!s.expiresAt) return false;
+    const daysLeft =
+      (new Date(s.expiresAt) - new Date()) / (1000 * 60 * 60 * 24);
+    return daysLeft > 0 && daysLeft <= EXPIRING_SOON_DAYS;
+  }).length;
   const companyName = submissions[0]?.legalName || "";
 
   return (
@@ -34,7 +43,11 @@ export default function Dashboard({
 
       <div className="dash-stats">
         <StatCard label="Installation profiles" value={profileCount} />
-        <StatCard label="CBAM goods covered" value={goodsCount} />
+        <StatCard
+          label="Installations needing review"
+          value={flaggedCount}
+          muted={flaggedCount === 0}
+        />
         <StatCard
           label="Total activity"
           value={`${totalTonnes.toLocaleString()} t`}
@@ -43,6 +56,11 @@ export default function Dashboard({
           label="Pending data requests"
           value={pendingRequests}
           muted={pendingRequests === 0}
+        />
+        <StatCard
+          label="Shares expiring soon"
+          value={expiringSoon}
+          muted={expiringSoon === 0}
         />
       </div>
 
