@@ -49,26 +49,42 @@ const BLANK = {
   documents: [],
 };
 
-// Starting state: BLANK for a new one, or the saved record overlaid on BLANK
-// for an edit. Values come back typed (number/boolean) so convert them to the
-// strings the form fields expect.
-function initialData(existing) {
-  if (!existing) return { ...BLANK };
-  const merged = { ...BLANK };
-  for (const k of Object.keys(BLANK)) {
-    const v = existing[k];
-    if (v === undefined || v === null) continue;
-    if (k === "documents") {
-      merged[k] = Array.isArray(v) ? v : [];
-    } else if (k === "consumesPrecursors" || k === "usingDefaultValues") {
-      merged[k] = v === true ? "yes" : v === false ? "no" : String(v);
-    } else if (k === "listedInCatalogue") {
-      merged[k] = v === true || v === "true";
-    } else {
-      merged[k] = String(v);
+const ORG_FIELDS = [
+  "legalName",
+  "country",
+  "taxId",
+  "contactName",
+  "contactEmail",
+];
+
+function initialData(existing, prefillSource) {
+  if (existing) {
+    const merged = { ...BLANK };
+    for (const k of Object.keys(BLANK)) {
+      const v = existing[k];
+      if (v === undefined || v === null) continue;
+      if (k === "documents") {
+        merged[k] = Array.isArray(v) ? v : [];
+      } else if (k === "consumesPrecursors" || k === "usingDefaultValues") {
+        merged[k] = v === true ? "yes" : v === false ? "no" : String(v);
+      } else if (k === "listedInCatalogue") {
+        merged[k] = v === true || v === "true";
+      } else {
+        merged[k] = String(v);
+      }
+    }
+    return merged;
+  }
+
+  const blank = { ...BLANK };
+  if (prefillSource) {
+    for (const k of ORG_FIELDS) {
+      if (prefillSource[k] !== undefined && prefillSource[k] !== null) {
+        blank[k] = String(prefillSource[k]);
+      }
     }
   }
-  return merged;
+  return blank;
 }
 
 function StepOrganisation({ data, updateField }) {
@@ -534,6 +550,7 @@ function StepProduction({ data, updateField, onUpload, onRemove, onView }) {
 
 export default function InstallationWizard({
   existing,
+  prefillSource,
   onCancel,
   onSubmitted,
 }) {
@@ -541,7 +558,7 @@ export default function InstallationWizard({
   const isEdit = Boolean(existing);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [data, setData] = useState(() => initialData(existing));
+  const [data, setData] = useState(() => initialData(existing, prefillSource));
 
   function updateField(field, value) {
     setData((prev) => ({ ...prev, [field]: value }));
