@@ -49,10 +49,6 @@ export default function Dashboard({
           muted={flaggedCount === 0}
         />
         <StatCard
-          label="Total activity"
-          value={`${totalTonnes.toLocaleString()} t`}
-        />
-        <StatCard
           label="Pending data requests"
           value={pendingRequests}
           muted={pendingRequests === 0}
