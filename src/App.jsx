@@ -203,6 +203,7 @@ export default function App() {
             <InstallationWizard
               key={editing?.installationId || "new"}
               existing={editing}
+              prefillSource={submissions[0]}
               onCancel={goHome}
               onSubmitted={async () => {
                 await loadSubmissions();
