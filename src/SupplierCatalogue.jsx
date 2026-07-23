@@ -4,6 +4,7 @@ import { useAuth } from "react-oidc-context";
 import { COUNTRIES, format } from "./cbamData";
 import { listCatalogue, createDataRequest } from "./Api";
 import { SHAREABLE_FIELDS } from "./sharingFields";
+import { isExpired } from "./DataSharing";
 
 function countryName(code) {
   return COUNTRIES.find((c) => c.code === code)?.name || code || "";
@@ -67,7 +68,10 @@ export default function SupplierCatalogue({
   // Already asked? Show status instead of a second Request button.
   const requestedIds = new Map(
     outgoing
-      .filter((r) => r.status === "pending" || r.status === "approved")
+      .filter(
+        (r) =>
+          r.status === "pending" || (r.status === "approved" && !isExpired(r)),
+      )
       .map((r) => [r.installationId, r.status]),
   );
 
